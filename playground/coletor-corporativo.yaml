@@ -1,0 +1,30 @@
+# Simula o OTel Collector da stack corporativa de observabilidade (o que roda no no do cluster, porta 4317 gRPC).
+# Em vez de mandar para o armazenamento real da stack, grava o que recebe em arquivos JSON para conferencia.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+
+exporters:
+  file/logs:
+    path: ./saida/corporativo-logs.json
+  file/metricas:
+    path: ./saida/corporativo-metricas.json
+  file/traces:
+    path: ./saida/corporativo-traces.json
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [file/logs]
+    metrics:
+      receivers: [otlp]
+      exporters: [file/metricas]
+    traces:
+      receivers: [otlp]
+      exporters: [file/traces]

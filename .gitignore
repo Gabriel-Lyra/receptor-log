@@ -1,0 +1,24 @@
+# Build
+target/
+*.class
+
+# Buffer local do receptor (pacotes de log aguardando envio)
+buffer/
+
+# Playground: binários baixados e saída do coletor
+playground/otelcol
+playground/otelcol.exe
+playground/*.tar.gz
+playground/s3mock.jar
+playground/saida/
+obj.gz
+
+# IDEs e sistema
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db

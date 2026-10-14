@@ -1,0 +1,28 @@
+{
+  "batchcomplete": true,
+  "continue": { "grncontinue": "0.123|0.456|0|0", "continue": "grncontinue||" },
+  "query": {
+    "pages": [
+      {
+        "pageid": 12345,
+        "ns": 0,
+        "title": "Rio Paranoá",
+        "extract": "O rio Paranoá é um rio brasileiro\nque banha o Distrito Federal.\n\nEle foi represado em 1959 para formar o lago Paranoá.",
+        "contentmodel": "wikitext",
+        "pagelanguage": "pt",
+        "pagelanguagehtmlcode": "pt",
+        "pagelanguagedir": "ltr",
+        "touched": "2026-09-30T12:34:56Z",
+        "lastrevid": 69000000,
+        "length": 4321,
+        "fullurl": "https://pt.wikipedia.org/wiki/Rio_Parano%C3%A1",
+        "canonicalurl": "https://pt.wikipedia.org/wiki/Rio_Parano%C3%A1",
+        "categories": [
+          { "ns": 14, "title": "Categoria:Rios do Distrito Federal (Brasil)" },
+          { "ns": 14, "title": "Categoria:Bacia do rio Paraná" }
+        ],
+        "pageprops": { "wikibase_item": "Q1000000" }
+      }
+    ]
+  }
+}

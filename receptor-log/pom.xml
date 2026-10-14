@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.gabriellyra.receptorlog</groupId>
+    <artifactId>receptor-log</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <name>receptor-log</name>
+    <description>Recebe logs dos servicos via OTLP/HTTP e os disponibiliza no S3 como NDJSON particionado</description>
+
+    <properties>
+        <!-- Java 17: mesma versao da imagem base usada em producao -->
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <compiler-plugin.version>3.14.0</compiler-plugin.version>
+        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <!-- 3.33 = linha LTS do Quarkus, a mesma do modelo-quarkus-pokemon -->
+        <quarkus.platform.version>3.33.4</quarkus.platform.version>
+        <!--
+            Classes geradas do protocolo OTLP. A 1.9.0-alpha foi gerada com protobuf-java 4.33.1, compativel com
+            o 4.33.2 que o BOM do Quarkus fixa. Versoes mais novas (1.10+) exigem protobuf 4.34+ em tempo de execucao.
+            O sufixo "alpha" e do artefato Java, nao do protocolo: o formato de logs do OTLP e estavel desde a 1.0.
+        -->
+        <opentelemetry-proto.version>1.9.0-alpha</opentelemetry-proto.version>
+        <!-- AWS SDK v2 para o envio ao S3 (passo 1.2) -->
+        <aws-sdk.version>2.55.11</aws-sdk.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- HTTP -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+
+        <!--
+            Log e metricas do PROPRIO receptor para a stack corporativa de observabilidade (collector do no), como
+            pede a stack corporativa. Nunca aponta para o proprio receptor.
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <!-- Protocolo OTLP (mensagens protobuf) -->
+        <dependency>
+            <groupId>io.opentelemetry.proto</groupId>
+            <artifactId>opentelemetry-proto</artifactId>
+            <version>${opentelemetry-proto.version}</version>
+        </dependency>
+
+        <!-- Envio ao S3: SDK v2 so com o cliente HTTP do JDK (sem Apache HttpClient e sem Netty) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${aws-sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache5-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+            <version>${aws-sdk.version}</version>
+        </dependency>
+        <!-- Testes -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler-plugin.version}</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
