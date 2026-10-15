@@ -1,5 +1,5 @@
 target/
-buffer/
+/buffer/
 .env
 *.log
 .idea/

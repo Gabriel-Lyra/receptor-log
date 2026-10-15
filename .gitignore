@@ -3,7 +3,7 @@ target/
 *.class
 
 # Buffer local do receptor (pacotes de log aguardando envio)
-buffer/
+/receptor-log/buffer/
 
 # Playground: binários baixados e saída do coletor
 playground/otelcol
