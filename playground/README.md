@@ -9,6 +9,7 @@ Peças para rodar a arquitetura inteira na sua máquina, sem nuvem e sem cluster
 | `coletor-corporativo.yaml` | Configuração de um OpenTelemetry Collector que **imita a observabilidade da empresa**: recebe na porta 4317 e grava em `saida/` | O coletor e as ferramentas de observabilidade da empresa |
 | `otelcol` / `otelcol.exe` | O programa do coletor (baixado no passo 0, não fica no repositório) | — |
 | `s3mock.jar` | **S3 de mentira** na porta 9090 (baixado no passo 0, não fica no repositório) | O S3 de destino |
+| [`insomnia/`](insomnia/) | Corpos OTLP prontos para chamar o `/v1/logs` na mão (Insomnia, Postman, curl) | Um serviço mandando log |
 
 ## Portas
 

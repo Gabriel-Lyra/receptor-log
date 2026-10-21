@@ -1,0 +1,27 @@
+
+¯
+%
+#
+service.name
+servico-sem-tokenŒ
+&
+$io.github.gabriellyra.teste.InsomniaI	ﬁH••Ù§‡	INFO*
+teste insomnia - INFO2
+origem
+
+insomniaYﬁH••Ù§‡I	∆L••Ù§‡WARN*
+teste insomnia - WARN2
+origem
+
+insomniaY∆L••Ù§‡ç	ÆP••Ù§‡ERROR*
+teste insomnia - ERROR2
+origem
+
+insomnia23
+exception.type!
+java.lang.IllegalStateException2$
+exception.message
+erro de teste2e
+exception.stacktraceM
+Kjava.lang.IllegalStateException: erro de teste
+	at Teste.main(Teste.java:1)YÆP••Ù§‡
