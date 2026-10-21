@@ -9,6 +9,10 @@ Os arquivos desta pasta já estão prontos.
 | `log-pokemon.bin.gz` | O mesmo, comprimido (mande com `Content-Encoding: gzip`) |
 | `log-outro-servico.bin` | 1 lote do serviço `servico-sem-token`, para testar o 403 |
 | `gerar.py` | Recria os arquivos (`pip install opentelemetry-proto`; troque o `service.name` se precisar) |
+| `ler.py` | Mostra um `.bin` ou `.bin.gz` como JSON legível: `python ler.py log-pokemon.bin` |
+
+Os `.bin` são protobuf binário: abertos num editor de texto, aparecem cheios de `?`. Para ler, use o `ler.py` ou
+`protoc --decode_raw < log-pokemon.bin` (sem nomes de campo, só números).
 
 ## Montando a requisição
 
