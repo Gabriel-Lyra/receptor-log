@@ -38,16 +38,16 @@ class EnviadorProntosTest {
 
     @Test
     void enviaDoMaisAntigoParaOMaisNovoEApagaDepoisDeConfirmar() throws IOException {
-        Path novo = pronto("servico=a/data=2026-10-14/hora=12/p-3.jsonl.gz", "2026-10-14T12:03:00Z");
-        Path velho = pronto("servico=b/data=2026-10-14/hora=11/p-1.jsonl.gz", "2026-10-14T11:59:00Z");
-        Path meio = pronto("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz", "2026-10-14T12:01:00Z");
+        Path novo = pronto("servico=a/data=2026-10-14/p-3.jsonl.gz", "2026-10-14T12:03:00Z");
+        Path velho = pronto("servico=b/data=2026-10-14/p-1.jsonl.gz", "2026-10-14T11:59:00Z");
+        Path meio = pronto("servico=a/data=2026-10-14/p-2.jsonl.gz", "2026-10-14T12:01:00Z");
 
         EnviadorProntos.Resultado r = enviador("").ciclo();
 
         assertEquals(List.of(
-                "servico=b/data=2026-10-14/hora=11/p-1.jsonl.gz",
-                "servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz",
-                "servico=a/data=2026-10-14/hora=12/p-3.jsonl.gz"), destino.chaves);
+                "servico=b/data=2026-10-14/p-1.jsonl.gz",
+                "servico=a/data=2026-10-14/p-2.jsonl.gz",
+                "servico=a/data=2026-10-14/p-3.jsonl.gz"), destino.chaves);
         assertEquals(new EnviadorProntos.Resultado(3, 0, false), r);
         assertFalse(Files.exists(novo));
         assertFalse(Files.exists(velho));
@@ -56,30 +56,30 @@ class EnviadorProntosTest {
 
     @Test
     void ignoraArquivoAindaSendoComprimido() throws IOException {
-        pronto("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz.tmp", "2026-10-14T12:00:00Z");
-        pronto("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz", "2026-10-14T12:00:00Z");
+        pronto("servico=a/data=2026-10-14/p-1.jsonl.gz.tmp", "2026-10-14T12:00:00Z");
+        pronto("servico=a/data=2026-10-14/p-2.jsonl.gz", "2026-10-14T12:00:00Z");
 
         enviador("").ciclo();
 
-        assertEquals(List.of("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz"), destino.chaves);
-        assertTrue(Files.exists(prontos.resolve("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz.tmp")));
+        assertEquals(List.of("servico=a/data=2026-10-14/p-2.jsonl.gz"), destino.chaves);
+        assertTrue(Files.exists(prontos.resolve("servico=a/data=2026-10-14/p-1.jsonl.gz.tmp")));
     }
 
     @Test
     void aplicaPrefixoComOuSemBarra() throws IOException {
-        Path arquivo = pronto("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", "2026-10-14T12:00:00Z");
-        assertEquals("logs/servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", enviador("logs").chave(arquivo));
-        assertEquals("logs/servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", enviador("/logs/").chave(arquivo));
-        assertEquals("a/b/servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", enviador("a/b").chave(arquivo));
-        assertEquals("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", enviador("  ").chave(arquivo));
+        Path arquivo = pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", "2026-10-14T12:00:00Z");
+        assertEquals("logs/servico=a/data=2026-10-14/p-1.jsonl.gz", enviador("logs").chave(arquivo));
+        assertEquals("logs/servico=a/data=2026-10-14/p-1.jsonl.gz", enviador("/logs/").chave(arquivo));
+        assertEquals("a/b/servico=a/data=2026-10-14/p-1.jsonl.gz", enviador("a/b").chave(arquivo));
+        assertEquals("servico=a/data=2026-10-14/p-1.jsonl.gz", enviador("  ").chave(arquivo));
     }
 
     @Test
     void paraNoPrimeiroErroMantemOsArquivosEEsperaAntesDeTentarDeNovo() throws IOException {
-        Path primeiro = pronto("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", "2026-10-14T12:00:01Z");
-        Path segundo = pronto("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz", "2026-10-14T12:00:02Z");
-        Path terceiro = pronto("servico=a/data=2026-10-14/hora=12/p-3.jsonl.gz", "2026-10-14T12:00:03Z");
-        destino.falharEm.add("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz");
+        Path primeiro = pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", "2026-10-14T12:00:01Z");
+        Path segundo = pronto("servico=a/data=2026-10-14/p-2.jsonl.gz", "2026-10-14T12:00:02Z");
+        Path terceiro = pronto("servico=a/data=2026-10-14/p-3.jsonl.gz", "2026-10-14T12:00:03Z");
+        destino.falharEm.add("servico=a/data=2026-10-14/p-2.jsonl.gz");
         EnviadorProntos enviador = enviador("");
 
         EnviadorProntos.Resultado r = enviador.ciclo();
@@ -100,15 +100,15 @@ class EnviadorProntosTest {
         relogio.avancar(Duration.ofSeconds(1));
         assertEquals(new EnviadorProntos.Resultado(2, 0, false), enviador.ciclo());
         assertEquals(List.of(
-                "servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz",
-                "servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz",
-                "servico=a/data=2026-10-14/hora=12/p-3.jsonl.gz"), destino.chaves);
+                "servico=a/data=2026-10-14/p-1.jsonl.gz",
+                "servico=a/data=2026-10-14/p-2.jsonl.gz",
+                "servico=a/data=2026-10-14/p-3.jsonl.gz"), destino.chaves);
         assertEquals(0, enviador.falhasSeguidas());
     }
 
     @Test
     void esperaDobraAteOMaximoEVoltaAoInicioDepoisDeUmSucesso() throws IOException {
-        pronto("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", "2026-10-14T12:00:00Z");
+        pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", "2026-10-14T12:00:00Z");
         destino.falharSempre = true;
         EnviadorProntos enviador = enviador("");
 
@@ -138,8 +138,8 @@ class EnviadorProntosTest {
 
     @Test
     void envioFinalRespeitaOPrazoEIgnoraAEsperaDeFalhaAnterior() throws IOException {
-        pronto("servico=a/data=2026-10-14/hora=12/p-1.jsonl.gz", "2026-10-14T12:00:01Z");
-        pronto("servico=a/data=2026-10-14/hora=12/p-2.jsonl.gz", "2026-10-14T12:00:02Z");
+        pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", "2026-10-14T12:00:01Z");
+        pronto("servico=a/data=2026-10-14/p-2.jsonl.gz", "2026-10-14T12:00:02Z");
         destino.falharSempre = true;
         EnviadorProntos enviador = enviador("");
         enviador.ciclo();
@@ -150,7 +150,7 @@ class EnviadorProntosTest {
                 enviador.enviarPendentes(relogio.instant().plusSeconds(12)));
 
         // Prazo ja vencido: nao envia nada.
-        pronto("servico=a/data=2026-10-14/hora=12/p-3.jsonl.gz", "2026-10-14T12:00:03Z");
+        pronto("servico=a/data=2026-10-14/p-3.jsonl.gz", "2026-10-14T12:00:03Z");
         assertEquals(new EnviadorProntos.Resultado(0, 1, true), enviador.enviarPendentes(relogio.instant()));
     }
 
@@ -162,9 +162,9 @@ class EnviadorProntosTest {
 
     @Test
     void apagaSoPastasVaziasParadasHaMaisDe10Minutos() throws IOException {
-        Path velha = Files.createDirectories(prontos.resolve("servico=a/data=2026-10-14/hora=10"));
-        Path recente = Files.createDirectories(prontos.resolve("servico=a/data=2026-10-14/hora=12"));
-        Path comArquivo = prontos.resolve("servico=b/data=2026-10-14/hora=09/p.jsonl.gz.tmp");
+        Path velha = Files.createDirectories(prontos.resolve("servico=a/data=2026-10-13"));
+        Path recente = Files.createDirectories(prontos.resolve("servico=a/data=2026-10-14"));
+        Path comArquivo = prontos.resolve("servico=b/data=2026-10-14/p.jsonl.gz.tmp");
         Files.createDirectories(comArquivo.getParent());
         Files.writeString(comArquivo, "x");
         idade(velha, "2026-10-14T11:49:00Z");

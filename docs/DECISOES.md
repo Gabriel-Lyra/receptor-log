@@ -17,7 +17,7 @@ ajuda quem chega depois.
 | [D04](#d04--o-idioma-do-envio-é-o-opentelemetry-otlphttp) | O "idioma" do envio é o OpenTelemetry (OTLP/HTTP) | Proposta aprovada |
 | [D05](#d05--no-quarkus-somar-um-envio-nunca-substituir) | No Quarkus, somar um envio, nunca substituir | Proposta aprovada |
 | [D06](#d06--formato-uma-linha-json-por-evento-tudo-junto) | Formato: uma linha JSON por evento, tudo junto | Proposta aprovada |
-| [D07](#d07--organização-no-bucket-por-serviço-dia-e-hora-em-utc) | Organização no bucket por serviço, dia e hora, em UTC | Proposta aprovada |
+| [D07](#d07--organização-no-bucket-por-serviço-e-dia-em-utc) | Organização no bucket por serviço e dia, em UTC | Proposta aprovada |
 | [D08](#d08--pacotes-de-30-minutos-ou-1-mb) | Pacotes de 30 minutos ou 1 MB | **Dono do projeto** |
 | [D09](#d09--gravar-já-compactado-e-recuperar-depois-de-uma-queda) | Gravar já compactado e recuperar depois de uma queda | Proposta aprovada |
 | [D10](#d10--envio-ao-s3-em-ordem-e-só-apagar-depois-da-confirmação) | Envio ao S3 em ordem, só apagando depois da confirmação | Proposta aprovada |
@@ -101,15 +101,22 @@ caminhos deve ser repetido a cada atualização do Quarkus.
 **Por quê:** JSON por linha é lido por quase qualquer ferramenta. Separar por nível duplicaria as linhas e complicaria
 a consulta; filtrar por `log.level` resolve.
 
-## D07 — Organização no bucket por serviço, dia e hora, em UTC
+## D07 — Organização no bucket por serviço e dia, em UTC
 
-**Decisão:** `servico=X/data=AAAA-MM-DD/hora=HH/arquivo.jsonl.gz`, usando a **hora em que o log chegou**, em **UTC**.
+**Decisão:** `servico=X/data=AAAA-MM-DD/<inicio>-<instancia>-<seq>.jsonl.gz`, usando a **hora em que o log chegou**,
+em **UTC**. O nome começa pelo início do pacote (`20261022T190000123Z`).
 
-**Por quê:** esse formato ("partição Hive") é entendido sem configuração por DuckDB, Athena e Trino, que podem ler só
-as pastas necessárias. UTC evita confusão com horário de verão.
+**Por quê:** `servico=` e `data=` seguem o formato "partição Hive", entendido sem configuração por DuckDB, Athena e
+Trino, que leem só as pastas necessárias. Com o nome começando pela data e hora, a lista de um dia sai em ordem
+cronológica, e uma hora se acha pelo prefixo do nome (`data=2026-10-22/20261022T19*`), que o S3 lista tão rápido quanto
+uma pasta. UTC evita confusão com horário de verão.
 
-**Preço:** 22h em Brasília aparece na pasta `hora=01` do dia seguinte. O horário real de cada evento continua no campo
-`@timestamp`. Um evento que chega atrasado fica na pasta da hora em que chegou.
+**Antes (até 2026-10-22):** havia também uma pasta `hora=HH/`. Ela foi tirada porque gerava 24 pastas por dia com no
+máximo 2 arquivos por réplica cada, poluindo o console. Também não foi para o outro extremo (tudo direto em
+`servico=X/`): seriam ~35 mil arquivos por ano numa pasta só, com 2 réplicas.
+
+**Preço:** 22h em Brasília aparece em `data=` do dia seguinte, com nome começando em `…T01`. O horário real de cada
+evento continua no campo `@timestamp`. Um evento que chega atrasado fica no arquivo da hora em que chegou.
 
 ## D08 — Pacotes de 30 minutos ou 1 MB
 

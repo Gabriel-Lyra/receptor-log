@@ -54,11 +54,12 @@ organizados assim:
 ```
 servico=modelo-quarkus-pokemon/
   data=2026-10-14/
-    hora=13/
-      receptor-log-7c9f-20261014T130000123Z-1.jsonl.gz
+    20261014T130000123Z-receptor-log-7c9f-1.jsonl.gz
+    20261014T133000456Z-receptor-log-7c9f-2.jsonl.gz
 ```
 
-Ou seja: uma pasta por serviço, dentro dela uma por dia e dentro dela uma por hora (em horário UTC). Ferramentas como
+Ou seja: uma pasta por serviço e, dentro dela, uma por dia (em horário UTC). O nome de cada arquivo começa pela data e
+hora em que ele foi aberto, então a lista de um dia já sai em ordem cronológica. Ferramentas como
 DuckDB, Athena e Trino conseguem consultar esses arquivos direto no bucket, sem precisar importar nada.
 
 ## Situação atual

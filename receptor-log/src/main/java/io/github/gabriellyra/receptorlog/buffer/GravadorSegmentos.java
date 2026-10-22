@@ -47,7 +47,7 @@ import java.util.zip.ZipException;
  * <pre>
  * buffer/
  *   abertos/&lt;servico&gt;/&lt;epoch-ms&gt;-&lt;seq&gt;.jsonl.gz                    (sendo gravado, ja comprimido)
- *   prontos/servico=&lt;s&gt;/data=AAAA-MM-DD/hora=HH/&lt;instancia&gt;-&lt;inicio&gt;-&lt;seq&gt;.jsonl.gz  (aguardando envio)
+ *   prontos/servico=&lt;s&gt;/data=AAAA-MM-DD/&lt;inicio&gt;-&lt;instancia&gt;-&lt;seq&gt;.jsonl.gz  (aguardando envio)
  * </pre>
  *
  * <p>O segmento e gravado ja em gzip, para o limite de tamanho valer para o arquivo que vai ao bucket (padrao: fecha
@@ -55,8 +55,9 @@ import java.util.zip.ZipException;
  * ja esta no disco em forma legivel, mesmo sem o fim do arquivo. Se o processo morrer, o proximo inicio repara o
  * gzip interrompido (ver {@link #recuperarSobras()}).
  *
- * <p>Particao por hora de <b>recebimento</b>, em UTC. Evento atrasado cai na hora em que chegou; o campo
- * {@code @timestamp} de cada linha continua com a hora real do evento.
+ * <p>Pasta por dia e nome pela hora de <b>recebimento</b>, em UTC. O segmento fecha na troca de hora, entao cada arquivo
+ * cobre uma hora so. Evento atrasado cai na hora em que chegou; o campo {@code @timestamp} de cada linha continua com
+ * a hora real do evento.
  *
  * <p>Entrega "pelo menos uma vez": se a gravacao falhar no meio de uma requisicao, o cliente recebe erro e
  * reenvia, e as linhas que chegaram a ser gravadas aparecem duas vezes.
@@ -231,8 +232,9 @@ public class GravadorSegmentos {
         return prontos
                 .resolve("servico=" + nome)
                 .resolve("data=" + DATA.format(abertoEm))
-                .resolve("hora=" + HORA.format(abertoEm))
-                .resolve(config.instancia() + "-" + INICIO.format(abertoEm) + "-" + sequencia.incrementAndGet()
+                // Sem pasta de hora: o nome comeca pelo inicio do segmento (AAAAMMDDTHHMMSSmmmZ), entao a listagem de
+                // um dia sai em ordem cronologica e uma hora se acha pelo prefixo do nome (.../20261022T19*).
+                .resolve(INICIO.format(abertoEm) + "-" + config.instancia() + "-" + sequencia.incrementAndGet()
                         + ".jsonl.gz");
     }
 

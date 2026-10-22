@@ -77,9 +77,9 @@ class DestinoS3Test {
         }
         Files.write(arquivo, conteudo);
 
-        destino().enviar("logs/servico=a/data=2026-10-14/hora=12/p.jsonl.gz", arquivo);
+        destino().enviar("logs/servico=a/data=2026-10-14/p.jsonl.gz", arquivo);
 
-        String caminho = "/meus-logs/logs/servico%3Da/data%3D2026-10-14/hora%3D12/p.jsonl.gz";
+        String caminho = "/meus-logs/logs/servico%3Da/data%3D2026-10-14/p.jsonl.gz";
         String chaveRecebida = objetos.keySet().stream().findFirst().orElseThrow();
         assertEquals(java.net.URLDecoder.decode(caminho, "UTF-8"), java.net.URLDecoder.decode(chaveRecebida, "UTF-8"));
         assertArrayEquals(conteudo, objetos.get(chaveRecebida));
