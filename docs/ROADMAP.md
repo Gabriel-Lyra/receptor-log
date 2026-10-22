@@ -15,7 +15,7 @@ Legenda: ✅ concluído · ▶️ próximo · ⬜ pendente
 
 | # | Passo | Status |
 |:--|:--|:--|
-| 1.1 | Recebe OTLP/HTTP (protobuf, gzip) e grava NDJSON no padrão ECS, em pacotes já compactados por serviço/data/hora. Fecha com **30 min ou 1 MB compactado** ou na troca de hora. Recupera o pacote interrompido depois de uma queda | ✅ |
+| 1.1 | Recebe OTLP/HTTP (protobuf, gzip) e grava NDJSON no padrão ECS, em pacotes já compactados por serviço/data. Fecha com **30 min ou 1 MB compactado** ou na troca de hora. Recupera o pacote interrompido depois de uma queda | ✅ |
 | 1.2 | Envio ao S3: mais antigo primeiro, apaga só depois da confirmação, para no primeiro erro, espera 5→60 s, compatível com S3 fora da AWS | ✅ |
 | 1.3 | Teto do buffer (1 GB): descarta os prontos mais antigos até 90%; 503 quando só há pacotes abertos; resumo por minuto com "HOUVE PERDA DE LOG" | ✅ |
 | 1.4 | Desligamento: 5 s ainda aceitando, até 10 s esperando requisições, envio final em até 12 s | ✅ |

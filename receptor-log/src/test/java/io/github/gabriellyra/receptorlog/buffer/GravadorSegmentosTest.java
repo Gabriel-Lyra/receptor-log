@@ -46,7 +46,7 @@ class GravadorSegmentosTest {
         List<Path> prontos = prontos();
         assertEquals(1, prontos.size());
         String relativo = gravador.diretorioProntos().relativize(prontos.get(0)).toString().replace('\\', '/');
-        assertEquals("servico=modelo-batch/data=2026-10-07/hora=14/pod-1-20261007T141000000Z-2.jsonl.gz", relativo);
+        assertEquals("servico=modelo-batch/data=2026-10-07/20261007T141000000Z-pod-1-2.jsonl.gz", relativo);
         assertEquals("{\"a\":1}\n{\"a\":2}\n{\"a\":3}\n", gunzip(prontos.get(0)));
         assertEquals(0, contar(raiz.resolve("abertos"), true));
     }
@@ -91,8 +91,9 @@ class GravadorSegmentosTest {
 
         List<String> caminhos = prontos().stream().map(Path::toString).map(s -> s.replace('\\', '/')).toList();
         assertEquals(2, caminhos.size());
-        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/hora=14/")));
-        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/hora=15/")));
+        // Cada arquivo cobre uma hora so: achar uma hora pelo prefixo do nome e exato
+        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T145950000Z-")));
+        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T150005000Z-")));
     }
 
     @Test
@@ -117,7 +118,7 @@ class GravadorSegmentosTest {
 
         List<Path> prontos = prontos();
         assertEquals(1, prontos.size());
-        assertTrue(prontos.get(0).toString().replace('\\', '/').contains("servico=svc/data=2026-10-07/hora=14/"));
+        assertTrue(prontos.get(0).toString().replace('\\', '/').contains("servico=svc/data=2026-10-07/20261007T14"));
         assertEquals("{\"perdido\":false}\n", gunzip(prontos.get(0)));
         assertTrue(Files.notExists(sobra));
     }

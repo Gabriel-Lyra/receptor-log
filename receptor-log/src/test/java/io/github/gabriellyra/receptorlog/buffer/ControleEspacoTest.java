@@ -56,7 +56,7 @@ class ControleEspacoTest {
 
     @Test
     void abaixoDoTetoNaoDescartaNada() throws IOException {
-        Path a = pronto("servico=a/data=2026-10-14/hora=11/p-1.jsonl.gz", 4_000, "2026-10-14T11:00:00Z");
+        Path a = pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", 4_000, "2026-10-14T11:00:00Z");
 
         assertTrue(espaco.liberar());
         assertTrue(Files.exists(a));
@@ -65,10 +65,10 @@ class ControleEspacoTest {
 
     @Test
     void noTetoDescartaOsMaisAntigosAte90PorCento() throws IOException {
-        Path velho = pronto("servico=a/data=2026-10-14/hora=09/p-1.jsonl.gz", 3_000, "2026-10-14T09:00:00Z");
-        Path meio = pronto("servico=b/data=2026-10-14/hora=10/p-2.jsonl.gz", 3_000, "2026-10-14T10:00:00Z");
-        Path novo = pronto("servico=a/data=2026-10-14/hora=11/p-3.jsonl.gz", 3_000, "2026-10-14T11:00:00Z");
-        Path novissimo = pronto("servico=a/data=2026-10-14/hora=11/p-4.jsonl.gz", 2_000, "2026-10-14T11:30:00Z");
+        Path velho = pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", 3_000, "2026-10-14T09:00:00Z");
+        Path meio = pronto("servico=b/data=2026-10-14/p-2.jsonl.gz", 3_000, "2026-10-14T10:00:00Z");
+        Path novo = pronto("servico=a/data=2026-10-14/p-3.jsonl.gz", 3_000, "2026-10-14T11:00:00Z");
+        Path novissimo = pronto("servico=a/data=2026-10-14/p-4.jsonl.gz", 2_000, "2026-10-14T11:30:00Z");
         // 11.000 bytes, teto 10.000, alvo 9.000: descartar so o mais velho (3.000) ja basta.
 
         assertTrue(espaco.liberar());
@@ -96,7 +96,7 @@ class ControleEspacoTest {
     @Test
     void medeDeNovoDepoisDeUmSegundo() throws IOException {
         assertTrue(espaco.liberar());
-        pronto("servico=a/data=2026-10-14/hora=11/p-1.jsonl.gz", 12_000, "2026-10-14T11:00:00Z");
+        pronto("servico=a/data=2026-10-14/p-1.jsonl.gz", 12_000, "2026-10-14T11:00:00Z");
 
         // Medicao em cache: ainda acha que ha espaco.
         assertTrue(espaco.liberar());

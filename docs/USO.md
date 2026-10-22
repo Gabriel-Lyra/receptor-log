@@ -161,11 +161,11 @@ O segundo comando dá erro **de propósito** (o número 25 já existe), para ger
 (Invoke-RestMethod "http://localhost:9090/logs-demo?list-type=2").ListBucketResult.Contents | Select-Object Key, Size
 ```
 
-Vai aparecer algo como `logs/servico=modelo-quarkus-pokemon/data=2026-10-14/hora=13/....jsonl.gz`. Para ler um arquivo
+Vai aparecer algo como `logs/servico=modelo-quarkus-pokemon/data=2026-10-14/20261014T13....jsonl.gz`. Para ler um arquivo
 (troque a chave pela que apareceu):
 
 ```powershell
-$chave = "logs/servico=modelo-quarkus-pokemon/data=.../hora=.../....jsonl.gz"
+$chave = "logs/servico=modelo-quarkus-pokemon/data=.../....jsonl.gz"
 Invoke-WebRequest "http://localhost:9090/logs-demo/$chave" -OutFile obj.gz -UseBasicParsing
 $gz = New-Object IO.Compression.GZipStream([IO.File]::OpenRead("$PWD\obj.gz"), [IO.Compression.CompressionMode]::Decompress)
 (New-Object IO.StreamReader($gz)).ReadToEnd(); $gz.Close()

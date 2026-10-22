@@ -1,7 +1,7 @@
 # receptor-log
 
 Serviço Quarkus que recebe os logs dos outros serviços via **OTLP/HTTP** (o protocolo padrão do OpenTelemetry) e os
-grava como **NDJSON comprimido, particionado por serviço, data e hora**, pronto para ir ao S3.
+grava como **NDJSON comprimido, particionado por serviço e data**, pronto para ir ao S3.
 
 Os serviços não sabem que existe S3. Cada um só configura para onde manda o próprio log.
 
@@ -60,7 +60,7 @@ O corpo HTTP pode ter até 16 MB comprimido e 64 MB descomprimido. Acima disso, 
 ```
 buffer/
   abertos/<servico>/<epoch-ms>-<seq>.jsonl.gz       ← sendo gravado (já comprimido)
-  prontos/servico=<s>/data=AAAA-MM-DD/hora=HH/<instancia>-<inicio>-<seq>.jsonl.gz
+  prontos/servico=<s>/data=AAAA-MM-DD/<inicio>-<instancia>-<seq>.jsonl.gz
 ```
 
 O caminho dentro de `prontos/` é a futura chave no bucket. A partição é estilo Hive (`chave=valor`), que DuckDB, Trino
@@ -97,7 +97,7 @@ Cada linha é um evento em JSON, com chaves ECS com ponto:
 
 ### Envio ao S3
 
-A cada 5 s, o receptor envia os arquivos de `prontos/` com a chave `[prefixo/]servico=…/data=…/hora=…/<arquivo>.jsonl.gz`:
+A cada 5 s, o receptor envia os arquivos de `prontos/` com a chave `[prefixo/]servico=…/data=…/<inicio>-<instancia>-<seq>.jsonl.gz`:
 
 - **Mais antigo primeiro.** Apaga o arquivo local só depois de o S3 confirmar.
 - **Para no primeiro erro** e espera antes de tentar de novo: 5 s, 10 s, 20 s, 40 s, 60 s, 60 s… Loga WARN na primeira
@@ -165,8 +165,11 @@ O receptor nunca manda log para si mesmo. Traces desligados: cada POST viraria u
 
 ### Decisões que valem saber
 
-- **Partição em UTC, pela hora de recebimento.** 22h em Brasília (UTC-3) cai em `hora=01` do dia seguinte. O `@timestamp`
-  continua com a hora real do evento. Um evento atrasado cai na hora em que chegou.
+- **Pasta por dia e nome começando pela hora, em UTC e pela hora de recebimento.** Não há pasta de hora: o nome do
+  arquivo começa pelo início do segmento (`20261022T190000123Z-…`), então os arquivos de um dia aparecem em ordem
+  cronológica e uma hora se acha pelo prefixo (`data=2026-10-22/20261022T19*`). Como o segmento fecha na troca de hora,
+  cada arquivo cobre uma hora só. 22h em Brasília (UTC-3) cai em `data=` do dia seguinte, com nome começando em `…T01`.
+  O `@timestamp` continua com a hora real do evento. Um evento atrasado cai na hora em que chegou.
 - **Um fluxo só, sem separar info de debug.** O nível está em cada linha, e filtrar por `log.level` na consulta
   substitui ter um arquivo de INFO e outro de DEBUG, sem duplicar as linhas INFO+.
 - **Entrega "pelo menos uma vez".** Se a gravação falhar no meio de uma requisição, o cliente recebe 503 e reenvia, e
