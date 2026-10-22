@@ -45,6 +45,11 @@ public class AgendadorEnvio {
     }
 
     void iniciar(@Observes StartupEvent evento) {
+        if (!config.envioHabilitado()) {
+            LOG.infof("Envio ao S3 desligado (receptor.s3.envio-habilitado=false). Os arquivos ficam em %s",
+                    gravador.diretorioProntos());
+            return;
+        }
         if (config.bucket().filter(b -> !b.isBlank()).isEmpty()) {
             LOG.warnf("Envio ao S3 desligado (RECEPTOR_S3_BUCKET vazio). Os arquivos ficam em %s",
                     gravador.diretorioProntos());

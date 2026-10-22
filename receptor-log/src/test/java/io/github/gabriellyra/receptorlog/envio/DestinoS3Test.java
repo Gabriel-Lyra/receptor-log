@@ -107,6 +107,7 @@ class DestinoS3Test {
     private DestinoS3 destino() {
         URI endpoint = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort());
         return DestinoS3.criar(new ConfiguracaoS3() {
+            @Override public boolean envioHabilitado() { return true; }
             @Override public Optional<String> bucket() { return Optional.of("meus-logs"); }
             @Override public Optional<URI> endpoint() { return Optional.of(endpoint); }
             @Override public String regiao() { return "us-east-1"; }

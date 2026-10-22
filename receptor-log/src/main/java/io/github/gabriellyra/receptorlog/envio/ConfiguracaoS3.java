@@ -16,6 +16,15 @@ import java.util.Optional;
 @ConfigMapping(prefix = "receptor.s3")
 public interface ConfiguracaoS3 {
 
+    /**
+     * Interruptor do envio. Existe para os testes: {@code %test.receptor.s3.envio-habilitado=false} no
+     * application.properties vence o RECEPTOR_S3_BUCKET vindo do {@code .env} ou do ambiente (valor de perfil tem
+     * prioridade sobre valor sem perfil; ja um {@code %test.receptor.s3.bucket=} vazio nao vence, porque vazio conta
+     * como "nao definido").
+     */
+    @WithDefault("true")
+    boolean envioHabilitado();
+
     /** Bucket de destino. Vazio desliga o envio. */
     Optional<String> bucket();
 

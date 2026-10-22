@@ -13,6 +13,9 @@ playground/s3mock.jar
 playground/saida/
 obj.gz
 
+# Variaveis locais (tokens, chaves do S3): nunca no repositorio
+.env
+
 # IDEs e sistema
 .idea/
 *.iml
