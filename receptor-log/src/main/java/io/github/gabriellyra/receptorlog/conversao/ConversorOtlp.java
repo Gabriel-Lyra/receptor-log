@@ -2,6 +2,7 @@ package io.github.gabriellyra.receptorlog.conversao;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import io.github.gabriellyra.receptorlog.Fuso;
 import io.opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest;
 import io.opentelemetry.proto.common.v1.AnyValue;
 import io.opentelemetry.proto.common.v1.KeyValue;
@@ -36,7 +37,8 @@ public class ConversorOtlp {
     /** Nome usado quando o servico nao informa {@code service.name}. */
     public static final String SERVICO_DESCONHECIDO = "desconhecido";
 
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
+    /** Horario de Brasilia com deslocamento: {@code 2026-10-22T16:00:00.123-03:00}. */
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(Fuso.BRASILIA);
     private static final HexFormat HEX = HexFormat.of();
 
     /**

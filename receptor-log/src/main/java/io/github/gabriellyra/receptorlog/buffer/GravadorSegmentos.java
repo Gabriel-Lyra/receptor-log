@@ -1,6 +1,7 @@
 package io.github.gabriellyra.receptorlog.buffer;
 
 import io.github.gabriellyra.receptorlog.ConfiguracaoReceptor;
+import io.github.gabriellyra.receptorlog.Fuso;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -26,7 +27,6 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +55,8 @@ import java.util.zip.ZipException;
  * ja esta no disco em forma legivel, mesmo sem o fim do arquivo. Se o processo morrer, o proximo inicio repara o
  * gzip interrompido (ver {@link #recuperarSobras()}).
  *
- * <p>Pasta por dia e nome pela hora de <b>recebimento</b>, em UTC. O segmento fecha na troca de hora, entao cada arquivo
- * cobre uma hora so. Evento atrasado cai na hora em que chegou; o campo {@code @timestamp} de cada linha continua com
+ * <p>Pasta por dia e nome pela hora de <b>recebimento</b>, no horario de Brasilia ({@link Fuso}), com o deslocamento no
+ * nome ({@code 20261022T160000123-0300}). O segmento fecha na troca de hora, entao cada arquivo cobre uma hora so. Evento atrasado cai na hora em que chegou; o campo {@code @timestamp} de cada linha continua com
  * a hora real do evento.
  *
  * <p>Entrega "pelo menos uma vez": se a gravacao falhar no meio de uma requisicao, o cliente recebe erro e
@@ -67,10 +67,10 @@ public class GravadorSegmentos {
 
     private static final Logger LOG = Logger.getLogger(GravadorSegmentos.class);
 
-    private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
-    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH").withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(Fuso.BRASILIA);
+    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH").withZone(Fuso.BRASILIA);
     private static final DateTimeFormatter INICIO =
-            DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSS'Z'").withZone(ZoneOffset.UTC);
+            DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssSSSxx").withZone(Fuso.BRASILIA);
     private static final Pattern NOME_ABERTO = Pattern.compile("(\\d+)-(\\d+)\\.jsonl(\\.gz)?");
     private static final Pattern CARACTER_INVALIDO = Pattern.compile("[^A-Za-z0-9._-]");
     private static final int TAMANHO_MAXIMO_NOME = 100;
@@ -232,8 +232,8 @@ public class GravadorSegmentos {
         return prontos
                 .resolve("servico=" + nome)
                 .resolve("data=" + DATA.format(abertoEm))
-                // Sem pasta de hora: o nome comeca pelo inicio do segmento (AAAAMMDDTHHMMSSmmmZ), entao a listagem de
-                // um dia sai em ordem cronologica e uma hora se acha pelo prefixo do nome (.../20261022T19*).
+                // Sem pasta de hora: o nome comeca pelo inicio do segmento em Brasilia (AAAAMMDDTHHMMSSmmm-0300), entao a
+                // listagem de um dia sai em ordem cronologica e uma hora se acha pelo prefixo do nome (.../20261022T16*).
                 .resolve(INICIO.format(abertoEm) + "-" + config.instancia() + "-" + sequencia.incrementAndGet()
                         + ".jsonl.gz");
     }

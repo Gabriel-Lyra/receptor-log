@@ -165,10 +165,12 @@ O receptor nunca manda log para si mesmo. Traces desligados: cada POST viraria u
 
 ### Decisões que valem saber
 
-- **Pasta por dia e nome começando pela hora, em UTC e pela hora de recebimento.** Não há pasta de hora: o nome do
-  arquivo começa pelo início do segmento (`20261022T190000123Z-…`), então os arquivos de um dia aparecem em ordem
-  cronológica e uma hora se acha pelo prefixo (`data=2026-10-22/20261022T19*`). Como o segmento fecha na troca de hora,
-  cada arquivo cobre uma hora só. 22h em Brasília (UTC-3) cai em `data=` do dia seguinte, com nome começando em `…T01`.
+- **Tudo no horário de Brasília, com o deslocamento junto.** O `@timestamp` sai como `2026-10-22T16:00:00.123-03:00`;
+  a pasta `data=` e o nome do arquivo usam o mesmo fuso (`20261022T160000123-0300-…`). O deslocamento garante que o
+  instante continua sem ambiguidade se o horário de verão voltar. O fuso fica numa constante só (`Fuso.BRASILIA`).
+- **Pasta por dia e nome começando pela hora de recebimento.** Não há pasta de hora: os arquivos de um dia aparecem em
+  ordem cronológica e uma hora se acha pelo prefixo (`data=2026-10-22/20261022T16*`). Como o segmento fecha na troca de
+  hora, cada arquivo cobre uma hora só.
   O `@timestamp` continua com a hora real do evento. Um evento atrasado cai na hora em que chegou.
 - **Um fluxo só, sem separar info de debug.** O nível está em cada linha, e filtrar por `log.level` na consulta
   substitui ter um arquivo de INFO e outro de DEBUG, sem duplicar as linhas INFO+.

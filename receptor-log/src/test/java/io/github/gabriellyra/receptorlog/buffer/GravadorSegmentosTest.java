@@ -46,7 +46,7 @@ class GravadorSegmentosTest {
         List<Path> prontos = prontos();
         assertEquals(1, prontos.size());
         String relativo = gravador.diretorioProntos().relativize(prontos.get(0)).toString().replace('\\', '/');
-        assertEquals("servico=modelo-batch/data=2026-10-07/20261007T141000000Z-pod-1-2.jsonl.gz", relativo);
+        assertEquals("servico=modelo-batch/data=2026-10-07/20261007T111000000-0300-pod-1-2.jsonl.gz", relativo);
         assertEquals("{\"a\":1}\n{\"a\":2}\n{\"a\":3}\n", gunzip(prontos.get(0)));
         assertEquals(0, contar(raiz.resolve("abertos"), true));
     }
@@ -92,8 +92,19 @@ class GravadorSegmentosTest {
         List<String> caminhos = prontos().stream().map(Path::toString).map(s -> s.replace('\\', '/')).toList();
         assertEquals(2, caminhos.size());
         // Cada arquivo cobre uma hora so: achar uma hora pelo prefixo do nome e exato
-        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T145950000Z-")));
-        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T150005000Z-")));
+        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T115950000-0300-")));
+        assertTrue(caminhos.stream().anyMatch(c -> c.contains("/data=2026-10-07/20261007T120005000-0300-")));
+    }
+
+    @Test
+    void diaEHoraSaoDeBrasilia() throws IOException {
+        // 01:30 UTC do dia 8 ainda e 22:30 do dia 7 em Brasilia
+        relogio.definir(Instant.parse("2026-10-08T01:30:00Z"));
+        gravador.gravar("svc", List.of("1"));
+        gravador.fecharTodos();
+
+        String relativo = gravador.diretorioProntos().relativize(prontos().get(0)).toString().replace('\\', '/');
+        assertTrue(relativo.startsWith("servico=svc/data=2026-10-07/20261007T223000000-0300-"), relativo);
     }
 
     @Test
@@ -118,7 +129,7 @@ class GravadorSegmentosTest {
 
         List<Path> prontos = prontos();
         assertEquals(1, prontos.size());
-        assertTrue(prontos.get(0).toString().replace('\\', '/').contains("servico=svc/data=2026-10-07/20261007T14"));
+        assertTrue(prontos.get(0).toString().replace('\\', '/').contains("servico=svc/data=2026-10-07/20261007T11"));
         assertEquals("{\"perdido\":false}\n", gunzip(prontos.get(0)));
         assertTrue(Files.notExists(sobra));
     }
