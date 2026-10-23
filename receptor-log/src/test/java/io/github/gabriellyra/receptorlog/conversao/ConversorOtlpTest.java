@@ -58,7 +58,8 @@ class ConversorOtlpTest {
 
         assertEquals(List.of("modelo-batch"), List.copyOf(resultado.keySet()));
         JsonNode linha = json.readTree(resultado.get("modelo-batch").get(0));
-        assertEquals("2026-10-07T16:20:00.123456789Z", linha.get("@timestamp").asText());
+        // Horario de Brasilia, com deslocamento (16:20 UTC = 13:20 em Brasilia)
+        assertEquals("2026-10-07T13:20:00.123456789-03:00", linha.get("@timestamp").asText());
         assertEquals("ERROR", linha.get("log.level").asText());
         assertEquals("Falha ao processar lote", linha.get("message").asText());
         assertEquals("modelo-batch", linha.get("service.name").asText());
@@ -165,8 +166,8 @@ class ConversorOtlpTest {
         List<String> linhas = conversor.converter(requisicao(recurso("svc", null, null, null), "l", observado, nenhum))
                 .get("svc");
 
-        assertEquals("1970-01-01T00:00:02Z", json.readTree(linhas.get(0)).get("@timestamp").asText());
-        assertEquals("2026-10-07T15:00:00Z", json.readTree(linhas.get(1)).get("@timestamp").asText());
+        assertEquals("1969-12-31T21:00:02-03:00", json.readTree(linhas.get(0)).get("@timestamp").asText());
+        assertEquals("2026-10-07T12:00:00-03:00", json.readTree(linhas.get(1)).get("@timestamp").asText());
     }
 
     @Test

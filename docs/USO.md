@@ -161,7 +161,7 @@ O segundo comando dá erro **de propósito** (o número 25 já existe), para ger
 (Invoke-RestMethod "http://localhost:9090/logs-demo?list-type=2").ListBucketResult.Contents | Select-Object Key, Size
 ```
 
-Vai aparecer algo como `logs/servico=modelo-quarkus-pokemon/data=2026-10-14/20261014T13....jsonl.gz`. Para ler um arquivo
+Vai aparecer algo como `logs/servico=modelo-quarkus-pokemon/data=2026-10-14/20261014T10...-0300-....jsonl.gz`. Para ler um arquivo
 (troque a chave pela que apareceu):
 
 ```powershell
@@ -380,4 +380,4 @@ Todas as opções do receptor são variáveis de ambiente.
 - **Buffer:** a pasta no disco onde os pacotes esperam para ir ao S3.
 - **Pod / réplica:** uma cópia do programa rodando no Kubernetes. Duas réplicas são duas cópias iguais dividindo o trabalho.
 - **JSON / NDJSON:** formato de texto estruturado. NDJSON é "um JSON por linha".
-- **UTC:** horário universal; no horário de Brasília, são 3 horas a menos.
+- **Deslocamento (`-03:00`):** quanto o horário de Brasília está atrás do horário universal (UTC). Vai junto em cada horário gravado para não haver dúvida sobre o instante.
