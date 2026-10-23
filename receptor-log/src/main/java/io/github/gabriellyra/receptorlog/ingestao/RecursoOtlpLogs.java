@@ -63,71 +63,117 @@ public class RecursoOtlpLogs {
                             @HeaderParam("Content-Encoding") String codificacao,
                             @HeaderParam("Authorization") String autorizacao,
                             byte[] corpo) {
-        String tipoBase = tipoBase(tipo);
-        if (!PROTOBUF.equals(tipoBase)) {
+        Map<String, List<String>> porServico;
+        try {
+            exigirProtobuf(tipo);
+            byte[] mensagem = descomprimir(corpo, codificacao);
+            porServico = conversor.converter(ler(mensagem));
+            conferirDonoDoToken(autorizacao, porServico);
+            reservarEspaco();
+            gravar(porServico);
+        } catch (Recusa recusa) {
+            return recusa.resposta;
+        }
+
+        int eventos = porServico.values().stream().mapToInt(List::size).sum();
+        contadores.aceita(eventos);
+        LOG.debugf("Recebidos %d eventos de %s", eventos, porServico.keySet());
+        return Response.ok(ExportLogsServiceResponse.getDefaultInstance().toByteArray(), PROTOBUF).build();
+    }
+
+    /** 415 se nao for protobuf. */
+    private static void exigirProtobuf(String tipo) throws Recusa {
+        if (!PROTOBUF.equals(tipoBase(tipo))) {
             // O exportador Java usa protobuf por padrao. JSON aqui quase sempre e configuracao errada no cliente.
             LOG.warnf("Content-Type nao suportado: %s (use OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf)", tipo);
-            return erro(Response.Status.UNSUPPORTED_MEDIA_TYPE, "Use " + PROTOBUF);
+            throw new Recusa(erro(Response.Status.UNSUPPORTED_MEDIA_TYPE, "Use " + PROTOBUF));
         }
+    }
 
+    /** Descomprime o gzip (413 acima do limite, 400 se invalido); 415 para outra codificacao. */
+    private byte[] descomprimir(byte[] corpo, String codificacao) throws Recusa {
         byte[] mensagem = corpo == null ? new byte[0] : corpo;
         String codificacaoBase = codificacao == null ? "" : codificacao.trim().toLowerCase(Locale.ROOT);
-        if (codificacaoBase.equals("gzip")) {
-            try {
-                mensagem = Descompressor.gunzip(mensagem, config.requisicao().tamanhoMaximoDescomprimidoBytes());
-            } catch (Descompressor.LimiteExcedido e) {
-                LOG.warn(e.getMessage());
-                return erro(Response.Status.REQUEST_ENTITY_TOO_LARGE, e.getMessage());
-            } catch (IOException e) {
-                return erro(Response.Status.BAD_REQUEST, "gzip invalido");
-            }
-        } else if (!codificacaoBase.isEmpty() && !codificacaoBase.equals("identity")) {
-            return erro(Response.Status.UNSUPPORTED_MEDIA_TYPE, "Content-Encoding nao suportado: " + codificacao);
+        if (codificacaoBase.isEmpty() || codificacaoBase.equals("identity")) {
+            return mensagem;
         }
-
-        ExportLogsServiceRequest requisicao;
+        if (!codificacaoBase.equals("gzip")) {
+            throw new Recusa(erro(Response.Status.UNSUPPORTED_MEDIA_TYPE,
+                    "Content-Encoding nao suportado: " + codificacao));
+        }
         try {
-            requisicao = ExportLogsServiceRequest.parseFrom(mensagem);
-        } catch (InvalidProtocolBufferException e) {
-            return erro(Response.Status.BAD_REQUEST, "Mensagem protobuf invalida");
+            return Descompressor.gunzip(mensagem, config.requisicao().tamanhoMaximoDescomprimidoBytes());
+        } catch (Descompressor.LimiteExcedido e) {
+            LOG.warn(e.getMessage());
+            throw new Recusa(erro(Response.Status.REQUEST_ENTITY_TOO_LARGE, e.getMessage()));
+        } catch (IOException e) {
+            throw new Recusa(erro(Response.Status.BAD_REQUEST, "gzip invalido"));
         }
+    }
 
-        Map<String, List<String>> porServico = conversor.converter(requisicao);
-        if (verificador.exigido()) {
-            // O filtro ja garantiu que o token vale; aqui confere se ele e do servico que esta mandando.
-            String dono = verificador.servicoDo(autorizacao).orElse("");
-            for (String servico : porServico.keySet()) {
-                if (!servico.equals(dono)) {
-                    contadores.recusadaServico();
-                    LOG.debugf("Token de '%s' usado para mandar log de '%s': 403", dono, servico);
-                    return erro(Response.Status.FORBIDDEN,
-                            "Este token so pode enviar log de '" + dono + "', e a requisicao tem '" + servico + "'");
-                }
+    /** 400 se o protobuf for invalido. */
+    private static ExportLogsServiceRequest ler(byte[] mensagem) throws Recusa {
+        try {
+            return ExportLogsServiceRequest.parseFrom(mensagem);
+        } catch (InvalidProtocolBufferException e) {
+            throw new Recusa(erro(Response.Status.BAD_REQUEST, "Mensagem protobuf invalida"));
+        }
+    }
+
+    /**
+     * 403 se o token for de outro servico. O filtro ja garantiu que o token vale; aqui confere se ele e do servico que
+     * esta mandando.
+     */
+    private void conferirDonoDoToken(String autorizacao, Map<String, List<String>> porServico) throws Recusa {
+        if (!verificador.exigido()) {
+            return;
+        }
+        String dono = verificador.servicoDo(autorizacao).orElse("");
+        for (String servico : porServico.keySet()) {
+            if (!servico.equals(dono)) {
+                contadores.recusadaServico();
+                LOG.debugf("Token de '%s' usado para mandar log de '%s': 403", dono, servico);
+                throw new Recusa(erro(Response.Status.FORBIDDEN,
+                        "Este token so pode enviar log de '" + dono + "', e a requisicao tem '" + servico + "'"));
             }
         }
+    }
+
+    /** 503 se o buffer estiver no teto so com segmentos abertos. */
+    private void reservarEspaco() throws Recusa {
         if (!espaco.liberar()) {
             contadores.recusadaSemEspaco();
             LOG.warn("Buffer no teto so com segmentos abertos: requisicao recusada com 503");
-            return indisponivel("Buffer cheio");
+            throw new Recusa(indisponivel("Buffer cheio"));
         }
+    }
+
+    /** 503 se o receptor estiver desligando ou o disco falhar (o cliente reenvia). */
+    private void gravar(Map<String, List<String>> porServico) throws Recusa {
         try {
             for (Map.Entry<String, List<String>> lote : porServico.entrySet()) {
                 gravador.gravar(lote.getKey(), lote.getValue());
             }
         } catch (GravadorSegmentos.Encerrando e) {
             contadores.recusadaEncerrando();
-            return indisponivel("Receptor encerrando");
+            throw new Recusa(indisponivel("Receptor encerrando"));
         } catch (IOException e) {
             LOG.errorf(e, "Falha ao gravar no buffer local");
-            return indisponivel("Falha temporaria ao gravar");
+            throw new Recusa(indisponivel("Falha temporaria ao gravar"));
         }
-        contadores.aceita(porServico.values().stream().mapToInt(List::size).sum());
+    }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debugf("Recebidos %d eventos de %s",
-                    porServico.values().stream().mapToInt(List::size).sum(), porServico.keySet());
+    /**
+     * Requisicao recusada, com a resposta pronta. Interrompe o {@link #receber} sem um {@code if} por etapa. Sem stack
+     * trace: e fluxo normal (cliente mal configurado, disco cheio), nao erro de programa.
+     */
+    private static final class Recusa extends Exception {
+        private final transient Response resposta;
+
+        Recusa(Response resposta) {
+            super(null, null, false, false);
+            this.resposta = resposta;
         }
-        return Response.ok(ExportLogsServiceResponse.getDefaultInstance().toByteArray(), PROTOBUF).build();
     }
 
     private static String tipoBase(String tipo) {
